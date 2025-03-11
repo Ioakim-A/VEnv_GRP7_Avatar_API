@@ -4,7 +4,34 @@ from sentence_transformers import SentenceTransformer, util
 from diffusers import StableDiffusionImg2ImgPipeline
 from PIL import Image
 import torch
-import requests
+
+def crop_and_apply_image(
+    generated_image_path='generated_face.png',
+    mask_image_path='base_skin/base_face_mask.png',
+    background_image_path='base_skin/base.jpeg',
+    output_image_path='final_texture.png'
+):
+    # Load images
+    generated_img = Image.open(generated_image_path).convert("RGBA")
+    mask_img = Image.open(mask_image_path).convert("L")  # Grayscale for mask
+    background_img = Image.open(background_image_path).convert("RGBA")
+
+    # Ensure generated image matches mask dimensions
+    generated_img = generated_img.resize(mask_img.size)
+
+    # Create a new blank image with transparency
+    cropped_img = Image.new("RGBA", mask_img.size)
+
+    # Paste generated image onto cropped_img using the mask
+    cropped_img.paste(generated_img, (0, 0), mask=mask_img)
+
+    # Paste cropped image onto background
+    background_img.paste(cropped_img, (0, 0), mask=cropped_img)
+
+    # Save final composited image
+    background_img.save(output_image_path)
+
+    print(f"Final image saved to {output_image_path}")
 
 app = FastAPI()
 
@@ -41,18 +68,24 @@ async def select_skin(request: Request):
 @app.post("/generate_skin_image")
 async def generate_skin_image(request: Request):
     data = await request.json()
-    prompt = data["prompt"]
+    prompt_face = data["prompt_face"]
+    num_images = data.get("num_images", 4) 
 
-    #base_prompt = 'The image is a texture which is split into multiple parts: head (top left), torso (bottom left), legs (top right), and hands (bottom right). Apply the following change to the image, leaving out unspecified parts not mentioned in this instruction:'
-    prompt = f'The base image is a texture of an avatar\'s head. Modify the texture so that the character has a {prompt} hairstyle while keeping all other facial details intact.'
-    #prompt = f"{base_prompt} {prompt}"
-    print(prompt)
+    base_face_image = Image.open('base_skin/base_face.png').convert("RGB").resize((512, 512))
 
-    base_image = Image.open('base_skin/base_head.jpg').convert("RGB").resize((512, 512))
+    output_image_paths = []
 
-    output_image = pipe(prompt, image=base_image, strength=0.7).images[0]
+    generated_images = pipe(prompt_face, image=base_face_image, strength=0.8, num_images_per_prompt=num_images).images
 
-    output_path = "generated_skin.png"
-    output_image.save(output_path)
+    for idx, img in enumerate(generated_images):
+        output_face_path = f"generated_face_{idx}.png"
+        img.save(output_face_path)
 
-    return {"image_path": output_path}
+        crop_and_apply_image(
+            generated_image_path=output_face_path,
+            output_image_path=f"final_output_{idx}.png"
+        )
+
+        output_image_paths.append(f"final_output_{idx}.png")
+
+    return {"image_paths": output_image_paths}
