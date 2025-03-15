@@ -11,7 +11,7 @@ from collections import Counter
 
 def get_dominant_color(image: Image.Image, num_colors=10) -> tuple:
         """
-        Returns the most dominant RGB color in the image.
+        Returns the most dominant RGB color in the image, ignoring transparent pixels.
         
         Args:
             image: PIL Image object
@@ -20,20 +20,24 @@ def get_dominant_color(image: Image.Image, num_colors=10) -> tuple:
         Returns:
             tuple: (R, G, B) tuple representing the most frequent color
         """
-        # Convert image to RGB mode if it's not already
-        img = image.convert("RGB")
+        # Convert image to RGBA mode to access transparency info
+        img = image.convert("RGBA")
         
         # Resize image to reduce processing time
         img = img.resize((100, 100))
         
-        # Quantize the image to a limited set of colors
-        quantized = img.quantize(colors=num_colors)
-        quantized = quantized.convert("RGB")
+        # Get pixel data with transparency
+        pixels = list(img.getdata())
         
-        # Get color data and count occurrences
-        pixels = list(quantized.getdata())
+        # Filter out transparent pixels (alpha < 128)
+        non_transparent_pixels = [(r, g, b) for r, g, b, a in pixels if a >= 128]
         
-        color_count = Counter(pixels)
+        if not non_transparent_pixels:
+            # Return default color if all pixels are transparent
+            return (0, 0, 0)
+        
+        # Count occurrences of each color
+        color_count = Counter(non_transparent_pixels)
         
         # Return the most common color
         return color_count.most_common(1)[0][0]
@@ -105,8 +109,8 @@ async def select_skin(request: Request):
 
     return {"chosen_skin": chosen_skin}
 
-@app.post("/generate_skin_image")
-async def generate_skin_image(request: Request):
+@app.post("/generate_skin_image_face")
+async def generate_skin_image_face(request: Request):
     data = await request.json()
     prompt_face = data["prompt_face"]
     num_images = data.get("num_images", 3)
@@ -123,6 +127,67 @@ async def generate_skin_image(request: Request):
 
     for img in generated_images:
         final_img = crop_and_apply_image(img)
+
+        buffer = BytesIO()
+        final_img.save(buffer, format="PNG")
+        img_str = base64.b64encode(buffer.getvalue()).decode("utf-8")
+        output_images_base64.append(img_str)
+
+    return JSONResponse(content={"images_base64": output_images_base64}) 
+
+@app.post("/generate_skin_image_torso")
+async def generate_skin_image_torso(request: Request):
+    data = await request.json()
+    prompt_torso = data["prompt_torso"]
+    num_images = data.get("num_images", 4)
+
+    base_torso_image = Image.open('base_skin/torso/base_front_torso_white_bg.png').convert("RGB").resize((512, 512))
+
+    generated_images = pipe(prompt_torso,
+                           image=base_torso_image,
+                           strength=0.8,
+                           num_inference_steps=60,
+                           num_images_per_prompt=num_images).images
+
+    output_images_base64 = []
+
+    for img in generated_images:
+        front_img = crop_and_apply_image(
+            img, 
+            mask_image_path='base_skin/torso/base_front_torso_mask.png',
+            background_image_path='base_skin/torso/base_front_torso_mask.png'
+        )
+
+        # Apply dominant color to the mask and save it
+        dominant_color = get_dominant_color(front_img)
+        mask_path = 'base_skin/torso/base_torso_mask.png'
+        colored_mask_path = 'base_skin/torso/base_torso_mask_coloured.png'
+        
+        # Open the mask image
+        mask_img = Image.open(mask_path).convert("RGBA")
+        
+        # Create a solid color image with the dominant color
+        solid_color = Image.new("RGB", mask_img.size, dominant_color)
+        solid_color = solid_color.convert("RGBA")
+        
+        # Use the alpha channel from the mask
+        r, g, b, a = mask_img.split()
+        solid_color.putalpha(a)
+        
+        # Save the resulting image
+        solid_color.save(colored_mask_path)
+        
+        torso_img = crop_and_apply_image(
+            front_img, 
+            mask_image_path='base_skin/torso/base_front_torso_mask.png',
+            background_image_path='base_skin/torso/base_torso_mask_coloured.png'
+        )
+
+        final_img = crop_and_apply_image(
+            torso_img, 
+            mask_image_path='base_skin/torso/base_torso_mask.png',
+            background_image_path='base_skin/torso/base.png'
+        )
 
         buffer = BytesIO()
         final_img.save(buffer, format="PNG")
