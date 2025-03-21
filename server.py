@@ -11,16 +11,16 @@ from collections import Counter
 
 import os
 # Set custom cache locations
-os.environ["HF_HOME"] = "/cs/student/projects1/2021/fbindley/cache/huggingface"
-os.environ["TRANSFORMERS_CACHE"] = "/cs/student/projects1/2021/fbindley/cache/transformers"
-os.environ["TORCH_HOME"] = "/cs/student/projects1/2021/fbindley/cache/torch"
-os.environ["XDG_CACHE_HOME"] = "/cs/student/projects1/2021/fbindley/cache"
+#os.environ["HF_HOME"] = "/cs/student/projects1/2021/fbindley/cache/huggingface"
+#os.environ["TRANSFORMERS_CACHE"] = "/cs/student/projects1/2021/fbindley/cache/transformers"
+#os.environ["TORCH_HOME"] = "/cs/student/projects1/2021/fbindley/cache/torch"
+#os.environ["XDG_CACHE_HOME"] = "/cs/student/projects1/2021/fbindley/cache"
 
-print("Cache locations set:")
-print(f"HF_HOME={os.environ['HF_HOME']}")
-print(f"TRANSFORMERS_CACHE={os.environ['TRANSFORMERS_CACHE']}")
-print(f"TORCH_HOME={os.environ['TORCH_HOME']}")
-print(f"XDG_CACHE_HOME={os.environ['XDG_CACHE_HOME']}")
+#print("Cache locations set:")
+#print(f"HF_HOME={os.environ['HF_HOME']}")
+#print(f"TRANSFORMERS_CACHE={os.environ['TRANSFORMERS_CACHE']}")
+#print(f"TORCH_HOME={os.environ['TORCH_HOME']}")
+#print(f"XDG_CACHE_HOME={os.environ['XDG_CACHE_HOME']}")
 
 def get_dominant_color(image: Image.Image, num_colors=10) -> tuple:
         """
@@ -96,21 +96,21 @@ def load_pipeline():
     """
     if torch.cuda.is_available():
         device = "cuda"
-        print("✅ Using CUDA for inference.")
+        print("Using CUDA for inference.")
     elif torch.backends.mps.is_available():
         device = "mps"
-        print("✅ Using MPS (Apple Silicon) for inference.")
+        print("Using MPS (Apple Silicon) for inference.")
     else:
         device = "cpu"
-        print("⚠️ No GPU detected, running on CPU (slow).")
+        print("No GPU detected, running on CPU (slow).")
 
     return StableDiffusionImg2ImgPipeline.from_pretrained(
         "runwayml/stable-diffusion-v1-5",
         torch_dtype=torch.float16 if device != "cpu" else torch.float32,
-        safety_checker=None  # Explicitly disable NSFW filter
+        safety_checker=None 
     ).to(device)
 
-pipe = load_pipeline()  # Auto-detect best available hardware
+pipe = load_pipeline() 
 
 app = FastAPI()
 

@@ -29,16 +29,22 @@ This repository contains the code and resources required to setup and run the mo
     2. `pip install -r requirements_cuda.txt`
 * To get the IP address: `ip a | grep 'inet'`. Make sure it is the ipv4 address not `127.0.0.1`
 * Setup ngrok 
+    1. Make sure your in the repository directory on the project directory (not home)
+    2. `wget https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-linux-amd64.tgz`
+    3. `tar -xvzf ngrok-v3-stable-linux-amd64.tgz`
+    4. `rm ngrok-v3-stable-linux-amd64.tgz`
+    5. Set up an ngrok account, and copy your api key
+    6. Store your auth token: `ngrok authtoken YOUR_AUTH_TOKEN`
 
-To run:
-tmux, and create 2 panes
-Run the python
-`uvicorn server:app --host 0.0.0.0 --port 8000 --workers 2` 
-Run ngrok
-* ngrok http 8000
+* Run ngrok with: `ngrok http 8000`
+* Start the server by running: `uvicorn server:app --host 0.0.0.0 --port 8000`. If it works, you can also try with the `--workers 2` setting
+
+If you have issues with running out of space in your home directory even though you are on the project directory, you may need to change your library install cache options. 
+They are commented out for now in the code.
+
 
 # Example curl request
-curl -X POST "https://c037-128-16-11-100.ngrok-free.app/generate_skin_image_face" \
+curl -X POST "https://example-address.ngrok-free.app/generate_skin_image_face" \
   -H "Content-Type: application/json" \
   -d '{"prompt_face": "futuristic robot face, metallic, glowing eyes", "num_images": 1}' \
-  -o output.json
+  -o output.json ; python3 view_image.py
