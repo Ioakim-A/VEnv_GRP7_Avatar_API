@@ -158,7 +158,7 @@ async def generate_skin_image_face(request: Request):
     generated_images = pipe(prompt_face,
                             image=base_face_image,
                             strength=0.8,
-                            num_inference_steps=50,
+                            num_inference_steps=100,
                             num_images_per_prompt=num_images).images
 
     output_images_base64 = []
@@ -188,7 +188,7 @@ async def generate_skin_image_torso(request: Request):
     generated_images = pipe(prompt_torso,
                            image=base_torso_image,
                            strength=0.8,
-                           num_inference_steps=50,
+                           num_inference_steps=100,
                            num_images_per_prompt=num_images).images
 
     output_images_base64 = []
