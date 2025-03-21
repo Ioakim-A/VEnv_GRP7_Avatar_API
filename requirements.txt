@@ -3,3 +3,11 @@ torch
 torchvision
 uvicorn
 fastapi
+
+# Extra libraries?
+diffusers[torch]
+transformers
+pillow
+
+#macos only
+coremltools; sys_platform == 'darwin'

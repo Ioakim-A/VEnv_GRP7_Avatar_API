@@ -19,3 +19,11 @@ This repository contains the code and resources required to setup and run the mo
 * Since this runs the server locally, requests need to be made using devices on the same network. You will need to find the IP address of your device. On Apple devices this can be done with: `ipconfig getifaddr en0`
 
 * Use this address to make API requests: `http://<your IP>:8000/select_skin`
+
+# Lab machine setup
+
+* To setup the lab machine:
+    1. `pip uninstall torch`
+    1. `pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121`
+    2. `pip install -r requirements_cuda.txt`
+* To get the IP address: `ip a | grep 'inet'`. Make sure it is the ipv4 address not `127.0.0.1`

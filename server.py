@@ -9,6 +9,19 @@ import base64
 from io import BytesIO
 from collections import Counter
 
+import os
+# Set custom cache locations
+os.environ["HF_HOME"] = "/cs/student/projects1/2021/fbindley/cache/huggingface"
+os.environ["TRANSFORMERS_CACHE"] = "/cs/student/projects1/2021/fbindley/cache/transformers"
+os.environ["TORCH_HOME"] = "/cs/student/projects1/2021/fbindley/cache/torch"
+os.environ["XDG_CACHE_HOME"] = "/cs/student/projects1/2021/fbindley/cache"
+
+print("Cache locations set:")
+print(f"HF_HOME={os.environ['HF_HOME']}")
+print(f"TRANSFORMERS_CACHE={os.environ['TRANSFORMERS_CACHE']}")
+print(f"TORCH_HOME={os.environ['TORCH_HOME']}")
+print(f"XDG_CACHE_HOME={os.environ['XDG_CACHE_HOME']}")
+
 def get_dominant_color(image: Image.Image, num_colors=10) -> tuple:
         """
         Returns the most dominant RGB color in the image, ignoring transparent pixels.
@@ -76,6 +89,29 @@ def crop_and_apply_image(
     
     return background_img
 
+
+def load_pipeline():
+    """
+    Load Stable Diffusion model based on available hardware (CUDA, MPS, or CPU).
+    """
+    if torch.cuda.is_available():
+        device = "cuda"
+        print("✅ Using CUDA for inference.")
+    elif torch.backends.mps.is_available():
+        device = "mps"
+        print("✅ Using MPS (Apple Silicon) for inference.")
+    else:
+        device = "cpu"
+        print("⚠️ No GPU detected, running on CPU (slow).")
+
+    return StableDiffusionImg2ImgPipeline.from_pretrained(
+        "runwayml/stable-diffusion-v1-5",
+        torch_dtype=torch.float16 if device != "cpu" else torch.float32,
+        safety_checker=None  # Explicitly disable NSFW filter
+    ).to(device)
+
+pipe = load_pipeline()  # Auto-detect best available hardware
+
 app = FastAPI()
 
 app.add_middleware(
@@ -86,12 +122,6 @@ app.add_middleware(
 )
 
 model = SentenceTransformer("all-MiniLM-L6-v2")
-
-pipe = StableDiffusionImg2ImgPipeline.from_pretrained(
-    "runwayml/stable-diffusion-v1-5",
-    torch_dtype=torch.float16,
-    safety_checker=None
-).to("mps")
 
 @app.post("/ping")
 async def ping():
