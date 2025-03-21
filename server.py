@@ -93,6 +93,10 @@ pipe = StableDiffusionImg2ImgPipeline.from_pretrained(
     safety_checker=None
 ).to("mps")
 
+@app.post("/ping")
+async def ping():
+    return {"status": "success", "message": "Server is running"}
+
 @app.post("/select_skin")
 async def select_skin(request: Request):
     data = await request.json()
@@ -113,14 +117,18 @@ async def select_skin(request: Request):
 async def generate_skin_image_face(request: Request):
     data = await request.json()
     prompt_face = data["prompt_face"]
-    num_images = data.get("num_images", 3)
+    num_images = data.get("num_images", 4)
+
+    prompt_face = prompt_face.replace(".", "").replace(",", "")
+    if 'face' not in prompt_face:
+        prompt_face = f'{prompt_face} face'
 
     base_face_image = Image.open('base_skin/base_face_closeup.png').convert("RGB").resize((512, 512))
 
     generated_images = pipe(prompt_face,
                             image=base_face_image,
                             strength=0.8,
-                            num_inference_steps=40,
+                            num_inference_steps=50,
                             num_images_per_prompt=num_images).images
 
     output_images_base64 = []
@@ -141,12 +149,16 @@ async def generate_skin_image_torso(request: Request):
     prompt_torso = data["prompt_torso"]
     num_images = data.get("num_images", 4)
 
+    prompt_torso = prompt_torso.replace(".", "").replace(",", "").replace("-", "")
+    if 'top' not in prompt_torso:
+        prompt_torso = f'{prompt_torso} top'
+
     base_torso_image = Image.open('base_skin/torso/base_front_torso_white_bg.png').convert("RGB").resize((512, 512))
 
     generated_images = pipe(prompt_torso,
                            image=base_torso_image,
                            strength=0.8,
-                           num_inference_steps=60,
+                           num_inference_steps=50,
                            num_images_per_prompt=num_images).images
 
     output_images_base64 = []
