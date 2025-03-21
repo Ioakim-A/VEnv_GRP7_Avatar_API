@@ -30,6 +30,10 @@ This repository contains the code and resources required to setup and run the mo
 * To get the IP address: `ip a | grep 'inet'`. Make sure it is the ipv4 address not `127.0.0.1`
 * Setup ngrok 
 
+To run:
+tmux, and create 2 panes
+Run the python
+`uvicorn server:app --host 0.0.0.0 --port 8000 --workers 2` 
 Run ngrok
 * ngrok http 8000
 
