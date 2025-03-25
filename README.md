@@ -1,8 +1,8 @@
 # COMP0113 Group 7 Local Server for Sentence Transformer and Stable Diffusion
-This repository contains the code and resources required to setup and run the models needed for our Avatar Unity Project.
+This repository contains the code and resources required to setup a server to run the generation models.
+These models generate textures for our Unity Avatar Maker project: [https://github.com/Tchowds/VEnv_GRP7_Avatar_Maker](https://github.com/Tchowds/VEnv_GRP7_Avatar_Maker)
 
-## Setup
-* **Python 3.12.9** was used.
+**Python 3.12.9** was used.
 
 # MacOS Setup
 * Apple's ML-Stable-Diffusion was used but feel free to use your own model with image&prompt-to-image generation. To install:
@@ -12,7 +12,7 @@ This repository contains the code and resources required to setup and run the mo
 
 * Then switch back to this repository's directory.
 
-* Setup a virtual environment and activate it
+* Setup a virtual environment and activate it.
 * Run `pip install -r requirements.txt`
 
 * Start the server by running: `uvicorn server:app --host 0.0.0.0 --port 8000 --workers 2` Note that if this is done for the first time, the models will need to be downloaded which may take a while.
@@ -22,7 +22,7 @@ This repository contains the code and resources required to setup and run the mo
 * Use this address to make API requests: `http://<your IP>:8000/select_skin`
 
 # Linux (Lab machine) setup
-
+Instead of running models locally on our devices, we set the server up on our department's lab machines. These are mcuh more powerful, with Nvidia GeForce RTX 3090 Ti graphics cards. These same instructions should work for any other machines running Cuda GPUs.
 * To setup the lab machine:
     1. `pip uninstall torch`
     1. `pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121`
