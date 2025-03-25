@@ -10,11 +10,12 @@ from io import BytesIO
 from collections import Counter
 
 import os
-# Set custom cache locations
-#os.environ["HF_HOME"] = "/cs/student/projects1/2021/fbindley/cache/huggingface"
-#os.environ["TRANSFORMERS_CACHE"] = "/cs/student/projects1/2021/fbindley/cache/transformers"
-#os.environ["TORCH_HOME"] = "/cs/student/projects1/2021/fbindley/cache/torch"
-#os.environ["XDG_CACHE_HOME"] = "/cs/student/projects1/2021/fbindley/cache"
+# Set custom cache locations if having issues with cached files taking up space in the wrong place
+
+#os.environ["HF_HOME"] = "PATH_TO_CACHE/cache/huggingface"
+#os.environ["TRANSFORMERS_CACHE"] = "PATH_TO_CACHE/cache/transformers"
+#os.environ["TORCH_HOME"] = "PATH_TO_CACHE/cache/torch"
+#os.environ["XDG_CACHE_HOME"] = "PATH_TO_CACHE/cache"
 
 #print("Cache locations set:")
 #print(f"HF_HOME={os.environ['HF_HOME']}")
@@ -23,16 +24,6 @@ import os
 #print(f"XDG_CACHE_HOME={os.environ['XDG_CACHE_HOME']}")
 
 def get_dominant_color(image: Image.Image, num_colors=10) -> tuple:
-        """
-        Returns the most dominant RGB color in the image, ignoring transparent pixels.
-        
-        Args:
-            image: PIL Image object
-            num_colors: Number of colors to quantize to before finding dominant
-        
-        Returns:
-            tuple: (R, G, B) tuple representing the most frequent color
-        """
         # Convert image to RGBA mode to access transparency info
         img = image.convert("RGBA")
         
@@ -69,19 +60,15 @@ def crop_and_apply_image(
     generated_img = generated_img.convert("RGBA")
     generated_img = generated_img.resize(mask_img.size)
     
-    # Create a new blank image for the cropped output
     cropped_img = Image.new("RGBA", mask_img.size)
-    # Create a solid color background with the dominant color
     solid_color_img = Image.new("RGBA", mask_img.size, dominant_colour)
     # Create a solid color image with the dominant color
     solid_color_img = Image.new("RGB", mask_img.size, dominant_colour)
-    # Convert to RGBA and use the mask as the alpha channel
     solid_color_img = solid_color_img.convert("RGBA")
     # Apply the mask as the alpha channel
     solid_color_img.putalpha(mask_img)
     # Use the solid color image as our base
     cropped_img = solid_color_img
-    # Paste generated image onto cropped image using the mask
     cropped_img.paste(generated_img, (0, 0), mask=mask_img)
     
     # Composite the cropped image over the background using its transparency
@@ -91,9 +78,6 @@ def crop_and_apply_image(
 
 
 def load_pipeline():
-    """
-    Load Stable Diffusion model based on available hardware (CUDA, MPS, or CPU).
-    """
     if torch.cuda.is_available():
         device = "cuda"
         print("Using CUDA for inference.")
@@ -205,18 +189,14 @@ async def generate_skin_image_torso(request: Request):
         mask_path = 'base_skin/torso/base_torso_mask.png'
         colored_mask_path = 'base_skin/torso/base_torso_mask_coloured.png'
         
-        # Open the mask image
         mask_img = Image.open(mask_path).convert("RGBA")
         
-        # Create a solid color image with the dominant color
         solid_color = Image.new("RGB", mask_img.size, dominant_color)
         solid_color = solid_color.convert("RGBA")
-        
-        # Use the alpha channel from the mask
+
         r, g, b, a = mask_img.split()
         solid_color.putalpha(a)
         
-        # Save the resulting image
         solid_color.save(colored_mask_path)
         
         torso_img = crop_and_apply_image(
